@@ -1,0 +1,325 @@
+variable "region" {
+  type    = string
+}
+
+variable "project_name" {
+  type    = string
+}
+
+variable "task_port" {
+  type    = number
+}
+
+variable "instances_count" {
+  type    = number
+}
+
+variable "instance_type" {
+  type    = string
+}
+
+variable "task_memory_size" {
+  type    = number
+}
+
+variable "task_cpu_reservation" {
+  type    = number
+}
+
+variable "task_num_gpus" {
+  type    = number
+}
+
+provider "aws" {
+  region  = "${var.region}"
+}
+
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
+# Providing a reference to our default VPC
+resource "aws_default_vpc" "default_vpc" {
+}
+
+terraform {
+  backend "s3" {
+    bucket = "%AILESS_AWS_ACCOUNT_ID%-ailess-tf-state"
+    key    = "%AILESS_PROJECT_NAME%-backend"
+    region = "us-east-1"
+  }
+}
+
+data "aws_availability_zones" "all" {}
+
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = ["${aws_default_vpc.default_vpc.id}"]
+  }
+}
+
+data "aws_ami" "ecs" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-ecs-gpu-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
+  }
+  owners = ["amazon"]
+}
+
+resource "aws_ecs_cluster" "cluster" {
+  name = "${var.project_name}-cluster"
+}
+
+resource "aws_cloudwatch_log_group" "cluster_log_group" {
+  name_prefix = "${var.project_name}"
+}
+
+resource "aws_ecs_task_definition" "cluster_task" {
+  family                   = "${var.project_name}-cluster-task" # Naming our first task
+  container_definitions    = <<DEFINITION
+  [
+    {
+      "name": "${var.project_name}-cluster-task",
+      "image": "${data.aws_caller_identity.current.account_id}.dkr.ecr.${data.aws_region.current.name}.amazonaws.com/diffusion-backend:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "hostPort": 8080
+        }
+      ],
+      "memory": var.taskMemoryReservation,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "${var.project_name}-cluster-logs",
+          "awslogs-region": "${data.aws_region.current.name}",
+          "awslogs-stream-prefix": "streaming"
+        }
+      },
+      "resourceRequirements": [
+         {
+           "type":"GPU",
+           "value": "${var.task_num_gpus}"
+         }
+      ]
+    }
+  ]
+  DEFINITION
+  network_mode = "host"
+  cpu                      = var.task_cpu_reservation
+  memory                   = var.task_memory_size
+  execution_role_arn       = "${aws_iam_role.diffusionEcsTaskExecutionRole.arn}"
+}
+
+resource "aws_iam_role" "diffusionEcsTaskExecutionRole" {
+  name_prefix = "${var.project_name}"
+  assume_role_policy = "${data.aws_iam_policy_document.assume_role_policy.json}"
+}
+
+data "aws_iam_policy_document" "assume_role_policy" {
+  name_prefix = "${var.project_name}"
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ecs-tasks.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
+  name_prefix = "${var.project_name}"
+  role       = "${aws_iam_role.diffusionEcsTaskExecutionRole.name}"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+resource "aws_alb" "application_load_balancer" {
+  name_prefix = "${var.project_name}"
+  load_balancer_type = "application"
+  subnets = data.aws_subnets.default.ids
+  # Referencing the security group
+  security_groups = ["${aws_security_group.load_balancer_security_group.id}"]
+}
+
+# Creating a security group for the load balancer:
+resource "aws_security_group" "load_balancer_security_group" {
+  name_prefix = "${var.project_name}"
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Allowing traffic in from all sources
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_lb_target_group" "target_group" {
+  name_prefix = "${var.project_name}"
+  port        = 8080
+  protocol    = "HTTP"
+  target_type = "instance"
+  vpc_id      = "${aws_default_vpc.default_vpc.id}" # Referencing the default VPC
+  health_check {
+    interval = 10
+    healthy_threshold = 2
+    unhealthy_threshold = 5
+  }
+}
+
+resource "aws_lb_listener" "listener" {
+  name_prefix = "${var.project_name}"
+  load_balancer_arn = "${aws_alb.application_load_balancer.arn}" # Referencing our load balancer
+  port              = "80"
+  protocol          = "HTTP"
+  default_action {
+    type             = "forward"
+    target_group_arn = "${aws_lb_target_group.target_group.arn}" # Referencing our tagrte group
+  }
+}
+
+resource "aws_ecs_service" "cluster_service" {
+  name = "${var.project_name}_cluster_service"
+  cluster         = "${aws_ecs_cluster.cluster.id}"             # Referencing our created Cluster
+  task_definition = "${aws_ecs_task_definition.cluster_task.arn}" # Referencing the task our service will spin up
+  desired_count   = 1 # Setting the number of containers to 3
+  deployment_minimum_healthy_percent = 100
+  deployment_maximum_percent = 200
+
+  load_balancer {
+    target_group_arn = "${aws_lb_target_group.target_group.arn}" # Referencing our target group
+    container_name   = "${aws_ecs_task_definition.cluster_task.family}"
+    container_port   = 8080 # Specifying the container port
+  }
+}
+
+
+resource "aws_security_group" "service_security_group" {
+  name_prefix = "${var.project_name}"
+  ingress {
+    from_port = 0
+    to_port   = 0
+    protocol  = "-1"
+    # Only allowing traffic in from the load balancer security group
+    # security_groups = ["${aws_security_group.load_balancer_security_group.id}"]
+    security_groups = [aws_security_group.load_balancer_security_group.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+
+## ECS
+
+data "aws_iam_policy_document" "ecs_agent" {
+  name_prefix = "${var.project_name}"
+
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "ecs_agent" {
+  name_prefix = "${var.project_name}"
+  assume_role_policy = data.aws_iam_policy_document.ecs_agent.json
+}
+
+
+resource "aws_iam_role_policy_attachment" "ecs_agent" {
+  name_prefix = "${var.project_name}"
+  role       = "${aws_iam_role.ecs_agent.name}"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
+}
+
+resource "aws_iam_instance_profile" "ecs_agent" {
+  name_prefix = "${var.project_name}"
+  role = aws_iam_role.ecs_agent.name
+  depends_on = [aws_iam_role_policy_attachment.ecs_agent]
+}
+
+resource "aws_launch_configuration" "ecs_launch_config" {
+  name_prefix = "${var.project_name}"
+  image_id             = data.aws_ami.ecs.id
+  iam_instance_profile = aws_iam_instance_profile.ecs_agent.name
+  security_groups      = [aws_security_group.service_security_group.id]
+  user_data            = "#!/bin/bash\necho ECS_CLUSTER=${aws_ecs_cluster.cluster.name} >> /etc/ecs/ecs.config"
+  instance_type        = "g4dn.xlarge"
+  depends_on = [aws_iam_instance_profile.ecs_agent]
+  key_name = "ssh-diffusion-workbench"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_ecs_capacity_provider" "capacity_provider" {
+  name = "${var.project_name}-cluster-capacity-provider"
+
+  auto_scaling_group_provider {
+    auto_scaling_group_arn         = aws_autoscaling_group.diffusion_cluster_asg.arn
+
+    managed_scaling {
+      status                    = "ENABLED"
+      target_capacity           = 100
+    }
+  }
+}
+
+resource "aws_ecs_cluster_capacity_providers" "capacity_providers" {
+  cluster_name = aws_ecs_cluster.cluster.name
+  name_prefix = "${var.project_name}"
+
+  capacity_providers = [aws_ecs_capacity_provider.capacity_provider.name]
+
+  default_capacity_provider_strategy {
+    base              = 1
+    weight            = 100
+    capacity_provider = aws_ecs_capacity_provider.capacity_provider.name
+  }
+}
+
+resource "aws_autoscaling_group" "diffusion_cluster_asg" {
+  name_prefix = "${var.project_name}"
+  vpc_zone_identifier       = data.aws_subnets.default.ids
+  launch_configuration      = aws_launch_configuration.ecs_launch_config.name
+  depends_on = [aws_launch_configuration.ecs_launch_config]
+
+  desired_capacity          = 1
+  min_size                  = 1
+  max_size                  = 2
+  health_check_grace_period = 300
+  health_check_type         = "EC2"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}

@@ -8,7 +8,7 @@ from ailess.modules.config_utils import save_config
 from ailess.modules.docker_utils import generate_or_update_docker_ignore, generate_dockerfile
 from ailess.modules.env_utils import get_environment_config
 from ailess.modules.python_utils import ensure_requirements_exists
-from ailess.modules.terraform_utils import generate_terraform_file
+from ailess.modules.terraform_utils import generate_terraform_file, generate_tfvars_file
 
 app = typer.Typer()
 
@@ -25,6 +25,7 @@ def init() -> None:
     print("✔    .dockerignore")
     generate_dockerfile(config)
     print("✔    Dockerfile")
+    generate_tfvars_file(config)
     generate_terraform_file(config)
     print("✔    Terraform Cluster Config")
     print("🚀    Done!")
