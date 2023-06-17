@@ -3,7 +3,8 @@ from string import Template
 
 import boto3
 
-from .aws_utils import get_instance_type_info
+from .aws_utils import get_instance_type_info, get_aws_account_id
+
 
 def generate_terraform_file(config):
     script_path = os.path.abspath(__file__)
@@ -45,3 +46,23 @@ task_num_gpus = $task_num_gpus
 
     with open(".ailess/cluster.tfvars", "w") as tfvars_file:
         tfvars_file.write(tfvars)
+
+def get_tf_state_bucket_name():
+    return f"{get_aws_account_id()}-ailess-tf-state"
+
+def ensure_tf_state_bucket_exists():
+    # Create an S3 client
+    s3 = boto3.client('s3')
+
+    bucket_name = get_tf_state_bucket_name()
+
+    # Check if the bucket exists
+    try:
+        s3.head_bucket(Bucket=bucket_name)
+    except s3.exceptions.NoSuchBucket:
+        # Bucket does not exist, create it
+        try:
+            s3.create_bucket(Bucket=bucket_name)
+            print(f"S3 bucket '{bucket_name}' created successfully.")
+        except Exception as e:
+            print(f"Error creating S3 bucket: {str(e)}")

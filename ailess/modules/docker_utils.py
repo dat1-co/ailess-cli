@@ -1,15 +1,21 @@
 import os
+import subprocess
+import sys
 
+from ailess.modules.cli_utils import run_command_in_working_directory
+from yaspin import yaspin
 
 def generate_dockerfile(config):
+    # TODO: generate dockerfile based on config and cuda version
     dockerfile_content = []
-    dockerfile_content.append("FROM {}-devel-ubuntu22.04".format(config["cuda_version"]))
+    dockerfile_content.append("FROM nvidia/cuda:{}-cudnn8-runtime-ubuntu20.04".format(config["cuda_version"]))
     dockerfile_content.append("ADD . /app")
     dockerfile_content.append("WORKDIR /app")
     dockerfile_content.append("RUN pip install -r requirements.txt")
     dockerfile_content.append("CMD python {}".format(config["entrypoint_path"]))
     with open(".ailess/Dockerfile", "w") as dockerfile:
         dockerfile.write("\n".join(dockerfile_content))
+
 
 def generate_or_update_docker_ignore():
     if os.path.exists(".dockerignore"):
@@ -24,3 +30,32 @@ def generate_or_update_docker_ignore():
     else:
         with open(".dockerignore", "w") as docker_ignore_file:
             docker_ignore_file.write(".ailess/*\n.idea/*")
+
+
+def build_docker_image(config):
+    with yaspin(text="    building docker image") as spinner:
+        run_command_in_working_directory(
+            "docker build -t {} . -f {}".format(
+                config["project_name"],
+                os.path.join(".ailess", "Dockerfile")
+            ), spinner)
+        spinner.ok("✔")
+
+def login_to_docker_registry(username, password, registry_url, spinner):
+    login_cmd = f"docker login --username {username} --password-stdin {registry_url}"
+
+    # Create a subprocess and execute the login command
+    proc = subprocess.Popen(login_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+
+    # Pass the password to the subprocess via stdin
+    stdout, stderr = proc.communicate(input=password.encode())
+
+    # Check the output to determine if the login was successful
+    if proc.returncode == 0:
+        return
+    else:
+        spinner.fail("❌")
+        # Command failed, print stdout and stderr
+        sys.stdout.buffer.write(stdout)  # Print stdout
+        sys.stderr.buffer.write(stderr)  # Print stderr
+        exit(1)
