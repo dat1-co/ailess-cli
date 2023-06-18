@@ -43,10 +43,10 @@ def config_prompt():
     return answers
 
 
-def run_command_in_working_directory(command, spinner):
+def run_command_in_working_directory(command, spinner, cwd=os.getcwd()):
     try:
         # Run the command silently, redirecting output
-        completed_process = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=os.getcwd())
+        completed_process = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd)
 
         # Check if the command was successful
         if completed_process.returncode == 0:

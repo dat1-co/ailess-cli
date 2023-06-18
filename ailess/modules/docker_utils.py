@@ -8,11 +8,11 @@ from yaspin import yaspin
 def generate_dockerfile(config):
     # TODO: generate dockerfile based on config and cuda version
     dockerfile_content = []
-    dockerfile_content.append("FROM nvidia/cuda:{}-cudnn8-runtime-ubuntu20.04".format(config["cuda_version"]))
+    dockerfile_content.append("FROM python:3.9.16")
     dockerfile_content.append("ADD . /app")
     dockerfile_content.append("WORKDIR /app")
     dockerfile_content.append("RUN pip install -r requirements.txt")
-    dockerfile_content.append("CMD python {}".format(config["entrypoint_path"]))
+    dockerfile_content.append("CMD [\"python3\", \"{}\"]".format(config["entrypoint_path"]))
     with open(".ailess/Dockerfile", "w") as dockerfile:
         dockerfile.write("\n".join(dockerfile_content))
 
@@ -33,10 +33,11 @@ def generate_or_update_docker_ignore():
 
 
 def build_docker_image(config):
+    from ailess.modules.terraform_utils import convert_to_alphanumeric
     with yaspin(text="    building docker image") as spinner:
         run_command_in_working_directory(
             "docker build -t {} . -f {}".format(
-                config["project_name"],
+                convert_to_alphanumeric(config["project_name"]),
                 os.path.join(".ailess", "Dockerfile")
             ), spinner)
         spinner.ok("✔")

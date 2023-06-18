@@ -82,6 +82,7 @@ def ensure_ecr_repo_exists(config):
 
 
 def push_docker_image(config):
+    from ailess.modules.terraform_utils import convert_to_alphanumeric
     with yaspin(text="    pushing docker image") as spinner:
         ensure_ecr_repo_exists(config)
         ecr_token = boto3.client('ecr', region_name=config['aws_region']).get_authorization_token()['authorizationData'][0]['authorizationToken']
@@ -90,11 +91,47 @@ def push_docker_image(config):
         # Login to ECR
         login_to_docker_registry("AWS", ecr_password, f"{get_aws_account_id()}.dkr.ecr.{config['aws_region']}.amazonaws.com", spinner)
 
-        ecr_image_name = f"{get_aws_account_id()}.dkr.ecr.{config['aws_region']}.amazonaws.com/{config['project_name']}"
+        ecr_image_name = f"{get_aws_account_id()}.dkr.ecr.{config['aws_region']}.amazonaws.com/{convert_to_alphanumeric(config['project_name'])}"
 
         run_command_in_working_directory(
-            f"docker tag {config['project_name']} {ecr_image_name}",
+            f"docker tag {convert_to_alphanumeric(config['project_name'])} {ecr_image_name}",
             spinner
         )
         run_command_in_working_directory(f"docker push {ecr_image_name}", spinner)
         spinner.ok("✔")
+
+def ecs_deploy(config):
+    ecs_client = boto3.client('ecs', region_name=config['aws_region'])
+
+    cluster_name = f"{config['project_name']}-cluster"
+    service_name = f"{config['project_name']}_cluster_service"
+    with yaspin(text="    deploying new code") as spinner:
+        ecs_client.update_service(
+            cluster=cluster_name,
+            service=service_name,
+            forceNewDeployment=True
+        )
+
+        waiter = ecs_client.get_waiter('services_stable')
+        waiter.wait(
+            cluster=cluster_name,
+            services=[service_name],
+            include=['DEPLOYMENTS'],
+            waiters={
+                'Delay': 10,
+                'MaxAttempts': 30
+            }
+        )
+        spinner.ok("✔")
+
+def print_endpoint_info(config):
+    from ailess.modules.terraform_utils import convert_to_alphanumeric
+    elbv2_client = boto3.client('elbv2', region_name=config['aws_region'])
+    alb_name = f"{convert_to_alphanumeric(config['project_name'])}-lb"
+
+        # Describe the load balancers with the given name
+    response = elbv2_client.describe_load_balancers(Names=[alb_name])
+
+    # Extract the public DNS name from the response
+    alb_dns_name = response['LoadBalancers'][0]['DNSName']
+    print(f"🌐    endpoint: http://{alb_dns_name}")

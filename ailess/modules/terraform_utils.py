@@ -2,8 +2,11 @@ import os
 from string import Template
 
 import boto3
+import re
+from yaspin import yaspin
 
 from .aws_utils import get_instance_type_info, get_aws_account_id
+from .cli_utils import run_command_in_working_directory
 
 
 def generate_terraform_file(config):
@@ -17,7 +20,7 @@ def generate_terraform_file(config):
         tf_file.write(
             file_contents
               .replace("%AILESS_AWS_ACCOUNT_ID%", boto3.client('sts').get_caller_identity().get('Account'))
-              .replace("%AILESS_PROJECT_NAME%", config["project_name"])
+              .replace("%AILESS_PROJECT_NAME%", convert_to_alphanumeric(config["project_name"]))
         )
 
 
@@ -35,9 +38,9 @@ task_cpu_reservation = $task_cpu_reservation
 task_num_gpus = $task_num_gpus
     """).substitute(
         region=config["aws_region"],
-        project_name=config["project_name"],
+        project_name=convert_to_alphanumeric(config["project_name"]),
         task_port=config["host_port"],
-        task_memory_size=instance_data["memory_size"] * 0.9,
+        task_memory_size=round(instance_data["memory_size"] * 0.9),
         task_cpu_reservation=instance_data["cpu_size"],
         task_num_gpus=instance_data["num_gpus"],
         instance_type=config["ec2_instance_type"],
@@ -51,18 +54,21 @@ def get_tf_state_bucket_name():
     return f"{get_aws_account_id()}-ailess-tf-state"
 
 def ensure_tf_state_bucket_exists():
-    # Create an S3 client
-    s3 = boto3.client('s3')
-
+    s3 = boto3.client('s3', region_name='us-east-1')
     bucket_name = get_tf_state_bucket_name()
+    s3.create_bucket(Bucket=bucket_name)
 
-    # Check if the bucket exists
-    try:
-        s3.head_bucket(Bucket=bucket_name)
-    except s3.exceptions.NoSuchBucket:
-        # Bucket does not exist, create it
-        try:
-            s3.create_bucket(Bucket=bucket_name)
-            print(f"S3 bucket '{bucket_name}' created successfully.")
-        except Exception as e:
-            print(f"Error creating S3 bucket: {str(e)}")
+def update_infrastructure():
+    with yaspin(text="    updating infrastructure") as spinner:
+        run_command_in_working_directory("terraform init -reconfigure", spinner, os.path.join(os.getcwd(), ".ailess"))
+        run_command_in_working_directory("terraform apply -auto-approve -var-file=cluster.tfvars", spinner, os.path.join(os.getcwd(), ".ailess"))
+        spinner.ok("✔")
+
+def destroy_infrastructure():
+    with yaspin(text="    updating infrastructure") as spinner:
+        run_command_in_working_directory("terraform destroy -auto-approve -var-file=cluster.tfvars", spinner, os.path.join(os.getcwd(), ".ailess"))
+        spinner.ok("✔")
+def convert_to_alphanumeric(string):
+    # Replace non-alphanumeric characters with hyphens
+    alphanumeric_string = re.sub(r'[^a-zA-Z0-9]+', '-', string)
+    return alphanumeric_string
