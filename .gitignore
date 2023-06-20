@@ -2,3 +2,4 @@
 *.iml
 .ailess
 .dockerignore
+.DS_Store
