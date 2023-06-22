@@ -6,6 +6,7 @@ import inquirer
 
 def config_prompt():
     from .aws_utils import get_regions, get_predefined_instances
+    from ailess.modules.aws_utils import get_instance_type_info
     print("Welcome to the ailess.dev CLI configuration wizard!")
     current_folder = os.path.basename(os.getcwd())
     questions = [
@@ -37,6 +38,9 @@ def config_prompt():
     ])
 
     answers['entrypoint_path'] = entrypoint_answers['entrypoint_path']
+
+    instance_data = get_instance_type_info(answers['ec2_instance_type'], answers["aws_region"])
+    answers["cpu_architecture"] = instance_data["cpu_architecture"]
 
     answers['cuda_version'] = '11.6.2'
 

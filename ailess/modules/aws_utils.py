@@ -6,7 +6,7 @@ import base64
 from yaspin import yaspin
 
 from ailess.modules.cli_utils import run_command_in_working_directory
-from ailess.modules.docker_utils import login_to_docker_registry
+from ailess.modules.docker_utils import login_to_docker_registry, DockerArchitecture
 
 
 def sort_key(region):
@@ -60,10 +60,16 @@ def get_instance_type_info(instance_type: str, region: str):
         print(f"ERROR: {instance_type} is not a valid instance type in {region}")
         exit(1)
 
+    arch = DockerArchitecture.AMD64
+
+    if "arm64" in response['InstanceTypes'][0]['ProcessorInfo']['SupportedArchitectures']:
+        arch = DockerArchitecture.ARM64
+
     return {
         "memory_size": response['InstanceTypes'][0]['MemoryInfo']['SizeInMiB'],
         "cpu_size": response['InstanceTypes'][0]['VCpuInfo']['DefaultVCpus'] * 1024,
         "num_gpus": len(response['InstanceTypes'][0].get('GpuInfo', {}).get('Gpus', [])),
+        "cpu_architecture": arch,
     }
 
 

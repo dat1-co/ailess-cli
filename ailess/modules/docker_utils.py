@@ -1,9 +1,15 @@
 import os
 import subprocess
 import sys
+from enum import Enum
 
 from ailess.modules.cli_utils import run_command_in_working_directory
 from yaspin import yaspin
+
+class DockerArchitecture(Enum):
+    AMD64 = "linux/amd64"
+    ARM64 = "linux/arm64"
+    ARMv7 = "linux/arm/v7"
 
 def generate_dockerfile(config):
     # TODO: generate dockerfile based on config and cuda version
@@ -36,17 +42,24 @@ def build_docker_image(config):
     from ailess.modules.terraform_utils import convert_to_alphanumeric
     with yaspin(text="    building docker image") as spinner:
         run_command_in_working_directory(
-            "docker build -t {} . -f {}".format(
+            "docker buildx build \
+            --platform {} \
+            -t {} \
+            . -f {}"
+            .format(
+                config["cpu_architecture"],
                 convert_to_alphanumeric(config["project_name"]),
                 os.path.join(".ailess", "Dockerfile")
             ), spinner)
         spinner.ok("✔")
 
+
 def login_to_docker_registry(username, password, registry_url, spinner):
     login_cmd = f"docker login --username {username} --password-stdin {registry_url}"
 
     # Create a subprocess and execute the login command
-    proc = subprocess.Popen(login_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    proc = subprocess.Popen(login_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            shell=True)
 
     # Pass the password to the subprocess via stdin
     stdout, stderr = proc.communicate(input=password.encode())
