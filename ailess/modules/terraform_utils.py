@@ -1,3 +1,4 @@
+import json
 import os
 from string import Template
 
@@ -57,6 +58,12 @@ def ensure_tf_state_bucket_exists():
     s3 = boto3.client('s3', region_name='us-east-1')
     bucket_name = get_tf_state_bucket_name()
     s3.create_bucket(Bucket=bucket_name)
+
+def is_infrastructure_update_required():
+    with yaspin(text="    verifying infrastructure") as spinner:
+        output = run_command_in_working_directory("terraform plan -var-file=cluster.tfvars -json", spinner, os.path.join(os.getcwd(), ".ailess"))
+        summary_line = filter(lambda line: json.load(line).get("type", "") == "change_summary", output.splitlines())
+        print()
 
 def update_infrastructure():
     with yaspin(text="    updating infrastructure") as spinner:

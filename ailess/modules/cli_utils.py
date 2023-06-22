@@ -50,7 +50,7 @@ def run_command_in_working_directory(command, spinner, cwd=os.getcwd()):
 
         # Check if the command was successful
         if completed_process.returncode == 0:
-            return  # Command executed successfully, no need to display output
+            return completed_process.stdout  # Command executed successfully, no need to display output
 
         spinner.fail("❌")
         # Command failed, print stdout and stderr

@@ -10,7 +10,7 @@ from ailess.modules.docker_utils import generate_or_update_docker_ignore, genera
 from ailess.modules.env_utils import get_environment_config
 from ailess.modules.python_utils import ensure_requirements_exists
 from ailess.modules.terraform_utils import generate_terraform_file, generate_tfvars_file, ensure_tf_state_bucket_exists, \
-    update_infrastructure, destroy_infrastructure
+    update_infrastructure, destroy_infrastructure, is_infrastructure_update_required
 
 app = typer.Typer()
 
@@ -36,15 +36,16 @@ def init() -> None:
 def deploy() -> None:
     """Deploy the project"""
     config = load_config()
-
-    build_docker_image(config)
-    push_docker_image(config)
-
-    ensure_tf_state_bucket_exists()
+    #
+    # build_docker_image(config)
+    # push_docker_image(config)
+    #
+    # ensure_tf_state_bucket_exists()
     # todo:
     # check if the infrastructure is already deployed and update it if so or deploy the code
-    update_infrastructure()
-    print_endpoint_info(config)
+    is_infrastructure_update_required()
+    # update_infrastructure()
+    # print_endpoint_info(config)
 
     print("🚀    done")
 
