@@ -1,3 +1,5 @@
+import time
+
 import boto3
 import base64
 
@@ -111,17 +113,6 @@ def ecs_deploy(config):
             service=service_name,
             forceNewDeployment=True
         )
-
-        waiter = ecs_client.get_waiter('services_stable')
-        waiter.wait(
-            cluster=cluster_name,
-            services=[service_name],
-            include=['DEPLOYMENTS'],
-            waiters={
-                'Delay': 10,
-                'MaxAttempts': 30
-            }
-        )
         spinner.ok("✔")
 
 def print_endpoint_info(config):
@@ -135,3 +126,35 @@ def print_endpoint_info(config):
     # Extract the public DNS name from the response
     alb_dns_name = response['LoadBalancers'][0]['DNSName']
     print(f"🌐    endpoint: http://{alb_dns_name}")
+
+def get_latest_deployment(cluster_name, service_name):
+    ecs_client = boto3.client('ecs')
+
+    response = ecs_client.describe_services(cluster=cluster_name, services=[service_name])
+    services = response['services']
+
+    if services:
+        service = services[0]
+        deployments = service.get('deployments', [])
+        if deployments:
+            latest_deployment = max(deployments, key=lambda d: d['createdAt'])
+            return latest_deployment
+
+    return None
+def wait_for_deployment(config):
+    cluster_name = f"{config['project_name']}-cluster"
+    service_name = f"{config['project_name']}_cluster_service"
+    with yaspin(text="    waiting for deployment") as spinner:
+        latest_deployment = get_latest_deployment(cluster_name, service_name)
+        if latest_deployment:
+            while latest_deployment['rolloutState'] != 'COMPLETED':
+                time.sleep(5)
+                latest_deployment = get_latest_deployment(cluster_name, service_name)
+                if latest_deployment['rolloutState'] == 'FAILED':
+                    spinner.fail("❌")
+                    print(f"Deployment failed {latest_deployment['rolloutStateReason']}, more details here:")
+                    print(f"https://console.aws.amazon.com/ecs/home?region={config['aws_region']}#/clusters/{cluster_name}/services/{service_name}/events")
+                    exit(1)
+            spinner.ok("✔")
+        else:
+            spinner.fail("❌")

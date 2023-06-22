@@ -3,7 +3,7 @@ from typing import Optional
 import typer
 
 from ailess import __app_name__, __version__
-from ailess.modules.aws_utils import push_docker_image, print_endpoint_info
+from ailess.modules.aws_utils import push_docker_image, print_endpoint_info, ecs_deploy, wait_for_deployment
 from ailess.modules.cli_utils import config_prompt
 from ailess.modules.config_utils import save_config, load_config
 from ailess.modules.docker_utils import generate_or_update_docker_ignore, generate_dockerfile, build_docker_image
@@ -36,17 +36,21 @@ def init() -> None:
 def deploy() -> None:
     """Deploy the project"""
     config = load_config()
-    #
-    # build_docker_image(config)
-    # push_docker_image(config)
-    #
-    # ensure_tf_state_bucket_exists()
-    # todo:
-    # check if the infrastructure is already deployed and update it if so or deploy the code
-    is_infrastructure_update_required()
-    # update_infrastructure()
-    # print_endpoint_info(config)
 
+    build_docker_image(config)
+    push_docker_image(config)
+
+    ensure_tf_state_bucket_exists()
+
+    should_update_infrastructure = is_infrastructure_update_required()
+    if should_update_infrastructure:
+        update_infrastructure()
+    else:
+        ecs_deploy(config)
+
+    wait_for_deployment(config)
+
+    print_endpoint_info(config)
     print("🚀    done")
 
 @app.command()

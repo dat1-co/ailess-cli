@@ -63,7 +63,9 @@ def is_infrastructure_update_required():
     with yaspin(text="    verifying infrastructure") as spinner:
         output = run_command_in_working_directory("terraform plan -var-file=cluster.tfvars -json", spinner, os.path.join(os.getcwd(), ".ailess"))
         summary_line = filter(lambda line: json.load(line).get("type", "") == "change_summary", output.splitlines())
-        print()
+        changes = json.loads(next(summary_line))["changes"]
+        spinner.ok("✔")
+        return changes["add"] > 0 or changes["change"] > 0 or changes["destroy"] > 0
 
 def update_infrastructure():
     with yaspin(text="    updating infrastructure") as spinner:
@@ -79,3 +81,4 @@ def convert_to_alphanumeric(string):
     # Replace non-alphanumeric characters with hyphens
     alphanumeric_string = re.sub(r'[^a-zA-Z0-9]+', '-', string)
     return alphanumeric_string
+
