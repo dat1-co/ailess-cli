@@ -1,15 +1,12 @@
 import os
 import subprocess
 import sys
-from enum import Enum
 
 from ailess.modules.cli_utils import run_command_in_working_directory
 from yaspin import yaspin
 
-class DockerArchitecture(Enum):
-    AMD64 = "linux/amd64"
-    ARM64 = "linux/arm64"
-    ARMv7 = "linux/arm/v7"
+DOCKER_ARCHITECTURE_AMD64 = "linux/amd64"
+DOCKER_ARCHITECTURE_ARM64 = "linux/arm64"
 
 def generate_dockerfile(config):
     # TODO: generate dockerfile based on config and cuda version
@@ -44,8 +41,8 @@ def build_docker_image(config):
         run_command_in_working_directory(
             "docker buildx build \
             --platform {} \
-            -t {} \
-            . -f {}"
+            -t {}:latest \
+            -f {} . --load"
             .format(
                 config["cpu_architecture"],
                 convert_to_alphanumeric(config["project_name"]),

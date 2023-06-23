@@ -62,10 +62,10 @@ def ensure_tf_state_bucket_exists():
 def is_infrastructure_update_required():
     with yaspin(text="    verifying infrastructure") as spinner:
         output = run_command_in_working_directory("terraform plan -var-file=cluster.tfvars -json", spinner, os.path.join(os.getcwd(), ".ailess"))
-        summary_line = filter(lambda line: json.load(line).get("type", "") == "change_summary", output.splitlines())
-        changes = json.loads(next(summary_line))["changes"]
+        summary_line = filter(lambda line: json.loads(line.decode('utf8')).get("type", "") == "change_summary", output.splitlines())
+        changes = json.loads(next(summary_line).decode('utf8'))["changes"]
         spinner.ok("✔")
-        return changes["add"] > 0 or changes["change"] > 0 or changes["destroy"] > 0
+        return changes["add"] > 0 or changes["change"] > 0 or changes["remove"] > 0
 
 def update_infrastructure():
     with yaspin(text="    updating infrastructure") as spinner:

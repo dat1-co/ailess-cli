@@ -6,7 +6,7 @@ import base64
 from yaspin import yaspin
 
 from ailess.modules.cli_utils import run_command_in_working_directory
-from ailess.modules.docker_utils import login_to_docker_registry, DockerArchitecture
+from ailess.modules.docker_utils import login_to_docker_registry, DOCKER_ARCHITECTURE_AMD64, DOCKER_ARCHITECTURE_ARM64
 
 
 def sort_key(region):
@@ -60,10 +60,10 @@ def get_instance_type_info(instance_type: str, region: str):
         print(f"ERROR: {instance_type} is not a valid instance type in {region}")
         exit(1)
 
-    arch = DockerArchitecture.AMD64
+    arch = DOCKER_ARCHITECTURE_AMD64
 
     if "arm64" in response['InstanceTypes'][0]['ProcessorInfo']['SupportedArchitectures']:
-        arch = DockerArchitecture.ARM64
+        arch = DOCKER_ARCHITECTURE_ARM64
 
     return {
         "memory_size": response['InstanceTypes'][0]['MemoryInfo']['SizeInMiB'],
@@ -133,8 +133,8 @@ def print_endpoint_info(config):
     alb_dns_name = response['LoadBalancers'][0]['DNSName']
     print(f"🌐    endpoint: http://{alb_dns_name}")
 
-def get_latest_deployment(cluster_name, service_name):
-    ecs_client = boto3.client('ecs')
+def get_latest_deployment(cluster_name, service_name, region):
+    ecs_client = boto3.client('ecs', region_name=region)
 
     response = ecs_client.describe_services(cluster=cluster_name, services=[service_name])
     services = response['services']
@@ -151,11 +151,11 @@ def wait_for_deployment(config):
     cluster_name = f"{config['project_name']}-cluster"
     service_name = f"{config['project_name']}_cluster_service"
     with yaspin(text="    waiting for deployment") as spinner:
-        latest_deployment = get_latest_deployment(cluster_name, service_name)
+        latest_deployment = get_latest_deployment(cluster_name, service_name, config['aws_region'])
         if latest_deployment:
             while latest_deployment['rolloutState'] != 'COMPLETED':
                 time.sleep(5)
-                latest_deployment = get_latest_deployment(cluster_name, service_name)
+                latest_deployment = get_latest_deployment(cluster_name, service_name, config['aws_region'])
                 if latest_deployment['rolloutState'] == 'FAILED':
                     spinner.fail("❌")
                     print(f"Deployment failed {latest_deployment['rolloutStateReason']}, more details here:")

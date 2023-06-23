@@ -204,6 +204,7 @@ resource "aws_ecs_service" "cluster_service" {
 
   capacity_provider_strategy {
     capacity_provider = "${aws_ecs_capacity_provider.capacity_provider.name}"
+    weight            = 100
   }
 
   lifecycle {
@@ -291,7 +292,7 @@ resource "aws_ecs_capacity_provider" "capacity_provider" {
 
     managed_scaling {
       status                    = "ENABLED"
-      target_capacity           = 100
+      target_capacity           = 70
     }
   }
 }
@@ -302,7 +303,7 @@ resource "aws_ecs_cluster_capacity_providers" "capacity_providers" {
   capacity_providers = [aws_ecs_capacity_provider.capacity_provider.name]
 
   default_capacity_provider_strategy {
-    base              = 1
+    base              = var.instances_count
     weight            = 100
     capacity_provider = aws_ecs_capacity_provider.capacity_provider.name
   }
@@ -325,5 +326,12 @@ resource "aws_autoscaling_group" "cluster_asg" {
 
   lifecycle {
     create_before_destroy = true
+  }
+
+
+  lifecycle {
+    ignore_changes = [
+      desired_capacity,
+    ]
   }
 }
