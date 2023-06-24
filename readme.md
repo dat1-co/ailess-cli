@@ -71,8 +71,8 @@ ailess packages your model and its dependencies into a Docker image. It will try
 ### Cluster
 
 ailess creates an ECS cluster that sits behind an Application Load Balancer (ALB).
-This allows zero-downtime deployment and auto-scaling of the endpoint.
-The ECS also runs health checks on the endpoint and restarts the container if it fails.
+This allows zero-downtime deployment and auto-scaling of the cluster.
+The ECS also runs health checks on the endpoint and restarts the container if it fails or rolls the deployment back if it fails to start.
 
 ## Contributing
 
