@@ -18,7 +18,7 @@ app = typer.Typer()
 def init() -> None:
     """Initialize the project"""
     config = config_prompt()
-    config = config.update(get_environment_config())
+    config.update(get_environment_config())
     save_config(config)
     print("✔    Config saved to .ailess/config.json")
     ensure_requirements_exists()
