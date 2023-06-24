@@ -7,7 +7,7 @@ import inquirer
 def config_prompt():
     from .aws_utils import get_regions, get_predefined_instances
     from ailess.modules.aws_utils import get_instance_type_info
-    print("Welcome to the ailess.dev CLI configuration wizard!")
+    print("Welcome to the Ailess CLI!")
     current_folder = os.path.basename(os.getcwd())
     questions = [
         inquirer.Text('project_name', message="What is your project name?", default=current_folder),
