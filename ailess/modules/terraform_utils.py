@@ -61,6 +61,7 @@ def ensure_tf_state_bucket_exists():
 
 def is_infrastructure_update_required():
     with yaspin(text="    verifying infrastructure") as spinner:
+        # todo: fix if init was not run before
         output = run_command_in_working_directory("terraform plan -var-file=cluster.tfvars -json", spinner, os.path.join(os.getcwd(), ".ailess"))
         summary_line = filter(lambda line: json.loads(line.decode('utf8')).get("type", "") == "change_summary", output.splitlines())
         changes = json.loads(next(summary_line).decode('utf8'))["changes"]
