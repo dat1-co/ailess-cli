@@ -326,10 +326,6 @@ resource "aws_autoscaling_group" "cluster_asg" {
 
   lifecycle {
     create_before_destroy = true
-  }
-
-
-  lifecycle {
     ignore_changes = [
       desired_capacity,
     ]
