@@ -62,6 +62,18 @@ ailess destroy
 
 This will delete the infrastructure and the endpoint on AWS ECS.
 
+## How it works
+
+### Docker Image
+
+ailess packages your model and its dependencies into a Docker image. It will try to detect a correct version and install CUDA and cuDNN if needed.
+
+### Cluster
+
+ailess creates an ECS cluster that sits behind an Application Load Balancer (ALB).
+This allows zero-downtime deployment and auto-scaling of the endpoint.
+The ECS also runs health checks on the endpoint and restarts the container if it fails.
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
