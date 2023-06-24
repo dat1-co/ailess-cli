@@ -16,6 +16,7 @@ Ailess is a Python package that allows you to easily deploy your machine learnin
 - [Docker](https://docs.docker.com/get-docker/)
 - [Terraform](https://learn.hashicorp.com/tutorials/terraform/install-cli)
 - [AWS Account](https://aws.amazon.com/premiumsupport/knowledge-center/create-and-activate-aws-account/)
+- AWS Credentials configured via ~/.aws/credentials or environment variables
 
 ### Installation
 
