@@ -1,5 +1,3 @@
-def get_environment_config():
+def get_cuda_version():
     # TODO: get these values from the environment
-    return {
-        'cuda_version': '10.1',
-    }
+    return '10.1'
