@@ -1,3 +1,4 @@
+LICENSE
 pyproject.toml
 ailess/__init__.py
 ailess/__main__.py

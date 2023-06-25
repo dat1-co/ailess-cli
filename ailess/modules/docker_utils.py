@@ -12,9 +12,10 @@ def generate_dockerfile(config):
     # TODO: generate dockerfile based on config and cuda version
     dockerfile_content = []
     dockerfile_content.append("FROM python:3.9.16")
-    dockerfile_content.append("ADD . /app")
+    dockerfile_content.append("ADD requirements.txt /app/requirements.txt")
     dockerfile_content.append("WORKDIR /app")
     dockerfile_content.append("RUN pip install -r requirements.txt")
+    dockerfile_content.append("ADD . /app")
     dockerfile_content.append("CMD [\"python3\", \"{}\"]".format(config["entrypoint_path"]))
     with open(".ailess/Dockerfile", "w") as dockerfile:
         dockerfile.write("\n".join(dockerfile_content))
