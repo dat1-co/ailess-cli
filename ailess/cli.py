@@ -7,7 +7,6 @@ from ailess.modules.aws_utils import push_docker_image, print_endpoint_info, ecs
 from ailess.modules.cli_utils import config_prompt, cuda_version_prompt, define_cuda_version
 from ailess.modules.config_utils import save_config, load_config
 from ailess.modules.docker_utils import generate_or_update_docker_ignore, generate_dockerfile, build_docker_image
-from ailess.modules.env_utils import get_environment_config
 from ailess.modules.python_utils import ensure_requirements_exists
 from ailess.modules.terraform_utils import generate_terraform_file, generate_tfvars_file, ensure_tf_state_bucket_exists, \
     update_infrastructure, destroy_infrastructure, is_infrastructure_update_required
@@ -18,11 +17,10 @@ app = typer.Typer()
 def init() -> None:
     """Initialize the project"""
     config = config_prompt()
-    config.update(get_environment_config())
     print("✔    Config saved to .ailess/config.json")
     ensure_requirements_exists()
     print("✔    requirements.txt")
-    if config["use_cuda"]:
+    if config["has_gpu"]:
         config.update({ "cuda_version": define_cuda_version() })
         save_config(config)
     generate_or_update_docker_ignore()
