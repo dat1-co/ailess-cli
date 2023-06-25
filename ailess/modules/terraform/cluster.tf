@@ -207,6 +207,11 @@ resource "aws_ecs_service" "cluster_service" {
     weight            = 100
   }
 
+  deployment_circuit_breaker {
+    enable = true
+    rollback = true
+  }
+
   lifecycle {
     ignore_changes = [
       capacity_provider_strategy,

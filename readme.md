@@ -17,6 +17,7 @@ Ailess is a Python package that allows you to easily deploy your machine learnin
 - [Terraform](https://learn.hashicorp.com/tutorials/terraform/install-cli)
 - [AWS Account](https://aws.amazon.com/premiumsupport/knowledge-center/create-and-activate-aws-account/)
 - AWS Credentials configured via ~/.aws/credentials or environment variables
+- Health check endpoint in your app. Load Balancer will be sending a GET request to `/` and expect a 200 response code.
 
 ### Installation
 

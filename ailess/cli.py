@@ -45,9 +45,8 @@ def deploy() -> None:
     should_update_infrastructure = is_infrastructure_update_required()
     if should_update_infrastructure:
         update_infrastructure()
-    else:
-        ecs_deploy(config)
 
+    ecs_deploy(config)
     wait_for_deployment(config)
 
     print_endpoint_info(config)
