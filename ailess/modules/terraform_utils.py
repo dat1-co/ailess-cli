@@ -1,3 +1,4 @@
+import json
 import os
 from string import Template
 
@@ -21,6 +22,7 @@ def generate_terraform_file(config):
             file_contents
               .replace("%AILESS_AWS_ACCOUNT_ID%", boto3.client('sts').get_caller_identity().get('Account'))
               .replace("%AILESS_PROJECT_NAME%", convert_to_alphanumeric(config["project_name"]))
+              .replace("%AILESS_AWS_REGION%", config["aws_region"])
         )
 
 
@@ -58,6 +60,15 @@ def ensure_tf_state_bucket_exists():
     bucket_name = get_tf_state_bucket_name()
     s3.create_bucket(Bucket=bucket_name)
 
+def is_infrastructure_update_required():
+    with yaspin(text="    verifying infrastructure") as spinner:
+        run_command_in_working_directory("terraform init -reconfigure", spinner, os.path.join(os.getcwd(), ".ailess"))
+        output = run_command_in_working_directory("terraform plan -var-file=cluster.tfvars -json", spinner, os.path.join(os.getcwd(), ".ailess"))
+        summary_line = filter(lambda line: json.loads(line.decode('utf8')).get("type", "") == "change_summary", output.splitlines())
+        changes = json.loads(next(summary_line).decode('utf8'))["changes"]
+        spinner.ok("✔")
+        return changes["add"] > 0 or changes["change"] > 0 or changes["remove"] > 0
+
 def update_infrastructure():
     with yaspin(text="    updating infrastructure") as spinner:
         run_command_in_working_directory("terraform init -reconfigure", spinner, os.path.join(os.getcwd(), ".ailess"))
@@ -72,3 +83,4 @@ def convert_to_alphanumeric(string):
     # Replace non-alphanumeric characters with hyphens
     alphanumeric_string = re.sub(r'[^a-zA-Z0-9]+', '-', string)
     return alphanumeric_string
+

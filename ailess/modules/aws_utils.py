@@ -1,10 +1,12 @@
+import time
+
 import boto3
 import base64
 
 from yaspin import yaspin
 
 from ailess.modules.cli_utils import run_command_in_working_directory
-from ailess.modules.docker_utils import login_to_docker_registry
+from ailess.modules.docker_utils import login_to_docker_registry, DOCKER_ARCHITECTURE_AMD64, DOCKER_ARCHITECTURE_ARM64
 
 
 def sort_key(region):
@@ -58,10 +60,16 @@ def get_instance_type_info(instance_type: str, region: str):
         print(f"ERROR: {instance_type} is not a valid instance type in {region}")
         exit(1)
 
+    arch = DOCKER_ARCHITECTURE_AMD64
+
+    if "arm64" in response['InstanceTypes'][0]['ProcessorInfo']['SupportedArchitectures']:
+        arch = DOCKER_ARCHITECTURE_ARM64
+
     return {
         "memory_size": response['InstanceTypes'][0]['MemoryInfo']['SizeInMiB'],
         "cpu_size": response['InstanceTypes'][0]['VCpuInfo']['DefaultVCpus'] * 1024,
         "num_gpus": len(response['InstanceTypes'][0].get('GpuInfo', {}).get('Gpus', [])),
+        "cpu_architecture": arch,
     }
 
 
@@ -111,17 +119,6 @@ def ecs_deploy(config):
             service=service_name,
             forceNewDeployment=True
         )
-
-        waiter = ecs_client.get_waiter('services_stable')
-        waiter.wait(
-            cluster=cluster_name,
-            services=[service_name],
-            include=['DEPLOYMENTS'],
-            waiters={
-                'Delay': 10,
-                'MaxAttempts': 30
-            }
-        )
         spinner.ok("✔")
 
 def print_endpoint_info(config):
@@ -135,3 +132,35 @@ def print_endpoint_info(config):
     # Extract the public DNS name from the response
     alb_dns_name = response['LoadBalancers'][0]['DNSName']
     print(f"🌐    endpoint: http://{alb_dns_name}")
+
+def get_latest_deployment(cluster_name, service_name, region):
+    ecs_client = boto3.client('ecs', region_name=region)
+
+    response = ecs_client.describe_services(cluster=cluster_name, services=[service_name])
+    services = response['services']
+
+    if services:
+        service = services[0]
+        deployments = service.get('deployments', [])
+        if deployments:
+            latest_deployment = max(deployments, key=lambda d: d['createdAt'])
+            return latest_deployment
+
+    return None
+def wait_for_deployment(config):
+    cluster_name = f"{config['project_name']}-cluster"
+    service_name = f"{config['project_name']}_cluster_service"
+    with yaspin(text="    waiting for deployment") as spinner:
+        latest_deployment = get_latest_deployment(cluster_name, service_name, config['aws_region'])
+        if latest_deployment:
+            while latest_deployment['rolloutState'] != 'COMPLETED':
+                time.sleep(5)
+                latest_deployment = get_latest_deployment(cluster_name, service_name, config['aws_region'])
+                if latest_deployment['rolloutState'] == 'FAILED':
+                    spinner.fail("❌")
+                    print(f"Deployment failed {latest_deployment['rolloutStateReason']}, more details here:")
+                    print(f"https://console.aws.amazon.com/ecs/home?region={config['aws_region']}#/clusters/{cluster_name}/services/{service_name}/events")
+                    exit(1)
+            spinner.ok("✔")
+        else:
+            spinner.fail("❌")

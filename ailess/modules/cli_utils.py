@@ -6,7 +6,8 @@ import inquirer
 
 def config_prompt():
     from .aws_utils import get_regions, get_predefined_instances
-    print("Welcome to the ailess.dev CLI configuration wizard!")
+    from ailess.modules.aws_utils import get_instance_type_info
+    print("Welcome to the Ailess CLI!")
     current_folder = os.path.basename(os.getcwd())
     questions = [
         inquirer.Text('project_name', message="What is your project name?", default=current_folder),
@@ -38,6 +39,9 @@ def config_prompt():
 
     answers['entrypoint_path'] = entrypoint_answers['entrypoint_path']
 
+    instance_data = get_instance_type_info(answers['ec2_instance_type'], answers["aws_region"])
+    answers["cpu_architecture"] = instance_data["cpu_architecture"]
+
     answers['cuda_version'] = '11.6.2'
 
     return answers
@@ -50,7 +54,7 @@ def run_command_in_working_directory(command, spinner, cwd=os.getcwd()):
 
         # Check if the command was successful
         if completed_process.returncode == 0:
-            return  # Command executed successfully, no need to display output
+            return completed_process.stdout  # Command executed successfully, no need to display output
 
         spinner.fail("❌")
         # Command failed, print stdout and stderr
