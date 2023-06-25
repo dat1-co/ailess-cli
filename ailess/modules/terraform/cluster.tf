@@ -44,7 +44,7 @@ resource "aws_default_vpc" "default_vpc" {
 terraform {
   backend "s3" {
     bucket = "%AILESS_AWS_ACCOUNT_ID%-ailess-tf-state"
-    key    = "%AILESS_PROJECT_NAME%-backend"
+    key    = "%AILESS_PROJECT_NAME%-%AILESS_AWS_REGION%-tf"
     region = "us-east-1"
   }
 }

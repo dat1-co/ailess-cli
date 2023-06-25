@@ -22,6 +22,7 @@ def generate_terraform_file(config):
             file_contents
               .replace("%AILESS_AWS_ACCOUNT_ID%", boto3.client('sts').get_caller_identity().get('Account'))
               .replace("%AILESS_PROJECT_NAME%", convert_to_alphanumeric(config["project_name"]))
+              .replace("%AILESS_AWS_REGION%", config["aws_region"])
         )
 
 
