@@ -97,7 +97,7 @@ resource "aws_ecs_task_definition" "cluster_task" {
       "portMappings": [
         {
           "containerPort": ${var.task_port},
-          "hostPort": ${var.task_port}
+          "hostPort": 0
         }
       ],
       "memory": ${var.task_memory_size},
@@ -113,7 +113,7 @@ resource "aws_ecs_task_definition" "cluster_task" {
     }
   ]
   DEFINITION
-  network_mode = "host"
+  network_mode = "bridge"
   cpu                      = var.task_cpu_reservation
   memory                   = var.task_memory_size
   execution_role_arn       = aws_iam_role.diffusionEcsTaskExecutionRole.arn
