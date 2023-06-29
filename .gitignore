@@ -8,3 +8,4 @@ __pycache__/
 .installed.cfg
 *.egg
 *.pyc
+build/
