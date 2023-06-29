@@ -30,6 +30,10 @@ variable "task_num_gpus" {
   type    = number
 }
 
+variable "cpu_architecture" {
+  type    = string
+}
+
 provider "aws" {
   region  = var.region
 }
@@ -75,6 +79,12 @@ data "aws_ami" "ecs" {
     name   = "root-device-type"
     values = ["ebs"]
   }
+
+  filter {
+    name   = "architecture"
+    values = [var.cpu_architecture]
+  }
+
   owners = ["amazon"]
 }
 

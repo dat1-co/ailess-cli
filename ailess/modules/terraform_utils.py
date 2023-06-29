@@ -8,6 +8,7 @@ from yaspin import yaspin
 
 from .aws_utils import get_instance_type_info, get_aws_account_id
 from .cli_utils import run_command_in_working_directory
+from .docker_utils import DOCKER_ARCHITECTURE_AMD64
 
 
 def generate_terraform_file(config):
@@ -40,6 +41,7 @@ instances_count = $instances_count
 task_memory_size = $task_memory_size
 task_cpu_reservation = $task_cpu_reservation
 task_num_gpus = $task_num_gpus
+cpu_architecture = "$cpu_architecture"
     """
     ).substitute(
         region=config["aws_region"],
@@ -50,6 +52,7 @@ task_num_gpus = $task_num_gpus
         task_num_gpus=instance_data["num_gpus"],
         instance_type=config["ec2_instance_type"],
         instances_count=config["instances_count"],
+        cpu_architecture= "x86_64" if config["cpu_architecture"] == DOCKER_ARCHITECTURE_AMD64 else "arm64",
     )
 
     with open(".ailess/cluster.tfvars", "w") as tfvars_file:
