@@ -62,7 +62,7 @@ def cuda_version_prompt():
         inquirer.Text(
             "cuda_version",
             message="You selected a GPU instance. Please enter an NVIDIA CUDA version to use",
-            default="12.1s",
+            default="12.1",
         ),
     ]
     answers = inquirer.prompt(questions)
