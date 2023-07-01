@@ -73,7 +73,7 @@ def start_docker_container(config):
         detach=True,
     )
 
-    print("✔    Container started at http://localhost:{}".format(config["host_port"]))
+    print("✔     container started at http://localhost:{}".format(config["host_port"]))
     def print_logs():
         for log in container.logs(stream=True):
             print(log.decode().strip())
