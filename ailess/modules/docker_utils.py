@@ -1,6 +1,10 @@
 import os
 import subprocess
 import sys
+import threading
+
+import docker
+import signal
 
 from ailess.modules.cli_utils import run_command_in_working_directory
 from yaspin import yaspin
@@ -16,7 +20,7 @@ def generate_dockerfile(config):
     dockerfile_content.append("WORKDIR /app")
     dockerfile_content.append("RUN pip install -r requirements.txt")
     dockerfile_content.append("ADD . /app")
-    dockerfile_content.append("CMD [\"python3\", \"{}\"]".format(config["entrypoint_path"]))
+    dockerfile_content.append("CMD [\"python3\", \"-u\", \"{}\"]".format(config["entrypoint_path"]))
     with open(".ailess/Dockerfile", "w") as dockerfile:
         dockerfile.write("\n".join(dockerfile_content))
 
@@ -51,6 +55,44 @@ def build_docker_image(config):
             ), spinner)
         spinner.ok("✔")
 
+
+
+def start_docker_container(config):
+    from ailess.modules.terraform_utils import convert_to_alphanumeric
+    client = docker.from_env()
+    try:
+        stop_container(config)
+    except docker.errors.NotFound:
+        pass
+    environment = {'NVIDIA_VISIBLE_DEVICES': 'all'} if config['has_gpu'] else None
+    container = client.containers.run(
+        convert_to_alphanumeric(config["project_name"]),  # Replace with the name or ID of your Docker image
+        name=convert_to_alphanumeric(config["project_name"]),
+        ports={'{}/tcp'.format(config["host_port"]): config["host_port"]},
+        environment=environment,
+        detach=True,
+    )
+
+    print("✔    Container started at http://localhost:{}".format(config["host_port"]))
+    def print_logs():
+        for log in container.logs(stream=True):
+            print(log.decode().strip())
+
+    log_thread = threading.Thread(target=print_logs)
+    log_thread.start()
+
+    container.wait()
+    container.stop()
+    log_thread.join()
+    container.remove()
+
+
+def stop_container(config):
+    from ailess.modules.terraform_utils import convert_to_alphanumeric
+    client = docker.from_env()
+    container = client.containers.get(convert_to_alphanumeric(config["project_name"]))
+    container.stop()
+    container.remove()
 
 def login_to_docker_registry(username, password, registry_url, spinner):
     login_cmd = f"docker login --username {username} --password-stdin {registry_url}"

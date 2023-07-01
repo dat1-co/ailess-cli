@@ -1,3 +1,4 @@
+import sys
 from typing import Optional
 
 import typer
@@ -6,7 +7,8 @@ from ailess import __app_name__, __version__
 from ailess.modules.aws_utils import push_docker_image, print_endpoint_info, ecs_deploy, wait_for_deployment
 from ailess.modules.cli_utils import config_prompt
 from ailess.modules.config_utils import save_config, load_config
-from ailess.modules.docker_utils import generate_or_update_docker_ignore, generate_dockerfile, build_docker_image
+from ailess.modules.docker_utils import generate_or_update_docker_ignore, generate_dockerfile, build_docker_image, \
+    start_docker_container, stop_container
 from ailess.modules.env_utils import get_environment_config
 from ailess.modules.python_utils import ensure_requirements_exists
 from ailess.modules.terraform_utils import generate_terraform_file, generate_tfvars_file, ensure_tf_state_bucket_exists, \
@@ -50,6 +52,18 @@ def deploy() -> None:
     wait_for_deployment(config)
 
     print_endpoint_info(config)
+    print("🚀    done")
+
+@app.command()
+def serve() -> None:
+    """Serve the project locally"""
+    config = load_config()
+    build_docker_image(config)
+    try:
+        start_docker_container(config)
+    except KeyboardInterrupt:
+        stop_container(config)
+        sys.exit(0)
     print("🚀    done")
 
 @app.command()
