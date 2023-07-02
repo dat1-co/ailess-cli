@@ -6,7 +6,8 @@ Ailess is a Python package that allows you to easily deploy your machine learnin
 
 - **No DevOps Degree required**: Ailess is designed to be used by data scientists and machine learning engineers with no prior experience in DevOps while following best DevOps practices.
 - **Solid Pipeline**: Ailess packages your model and its dependencies into a Docker image, pushes it to AWS ECR, and deploys it as an endpoint on AWS ECS.
-- **Easy to use**: Ailess is designed to be used with a single command line interface.
+- **Zero downtime deployment**: Ailess uses AWS ECS to deploy your model as an endpoint behind an Application Load Balancer (ALB). This allows zero-downtime deployment and auto-scaling of the cluster.
+- **Auto-recovery**: Ailess runs health checks on the endpoint and restarts the container if it fails or rolls the deployment back if it fails to start.
 
 ## Getting Started
 
