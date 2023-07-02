@@ -97,13 +97,13 @@ def _version_callback(value: bool) -> None:
 
 @app.callback()
 def main(
-        version: Optional[bool] = typer.Option(
-            None,
-            "--version",
-            "-v",
-            help="Show ailess CLI version and exit.",
-            callback=_version_callback,
-            is_eager=True,
-        )
+    version: Optional[bool] = typer.Option(
+        None,
+        "--version",
+        "-v",
+        help="Show ailess CLI version and exit.",
+        callback=_version_callback,
+        is_eager=True,
+    )
 ) -> None:
     return

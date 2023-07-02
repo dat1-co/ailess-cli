@@ -52,7 +52,7 @@ cpu_architecture = "$cpu_architecture"
         task_num_gpus=instance_data["num_gpus"],
         instance_type=config["ec2_instance_type"],
         instances_count=config["instances_count"],
-        cpu_architecture= "x86_64" if config["cpu_architecture"] == DOCKER_ARCHITECTURE_AMD64 else "arm64",
+        cpu_architecture="x86_64" if config["cpu_architecture"] == DOCKER_ARCHITECTURE_AMD64 else "arm64",
     )
 
     with open(".ailess/cluster.tfvars", "w") as tfvars_file:
