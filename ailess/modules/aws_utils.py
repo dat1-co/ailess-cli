@@ -1,8 +1,7 @@
+import base64
 import time
 
 import boto3
-import base64
-
 from yaspin import yaspin
 
 from ailess.modules.cli_utils import run_command_in_working_directory

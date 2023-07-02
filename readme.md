@@ -42,6 +42,15 @@ In turn, Ailess will generate the following files in .ailess directory:
 - **.ailess/cluster.tfvars**: Terraform variables file for creating the ECS cluster.
 - **requirements.txt**: Python dependencies for your model.
 
+### Running locally
+
+To run your model locally, run the following command in your project's root directory:
+```bash
+ailess serve
+```
+
+This will build the Docker image and run it locally.
+
 ### Deploy your model
 
 To deploy your model, run the following command in your project's root directory:
