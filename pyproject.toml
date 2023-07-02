@@ -1,15 +1,6 @@
-[tool.poetry]
+[project]
 name = "ailess"
 version = "0.1.0"
-description = ""
-readme = "README.md"
-packages = [{include = "ailess"}]
-authors = ["ailess.dev team <contact@ailess.dev>"]
-include = ["ailess/modules/terraform/cluster.tf"]
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
 
 dependencies = [
     "typer >= 0.9.0",
