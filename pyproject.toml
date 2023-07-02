@@ -13,3 +13,6 @@ dependencies = [
 
 [project.scripts]
 ailess = "ailess.cli:app"
+
+[project.files]
+included-files = ["ailess/modules/terraform/cluster.tf"]
