@@ -24,7 +24,7 @@ def get_image_name_from_config(config):
             f"https://hub.docker.com/v2/repositories/nvidia/cuda/tags/?name={cuda_version}&page_size=100"
         )
         image_names = list(map(lambda result: result["name"], json.load(response)["results"]))
-        pattern = r"^(\d+\.\d+)(\.\d+)?-devel-ubuntu(\d+\.\d+)$"
+        pattern = r"^(\d+\.\d+)(\.\d+)?-runtime-ubuntu(\d+\.\d+)$"
         filtered_images = [image for image in image_names if re.match(pattern, image)]
         sorted_images = sorted(
             filtered_images, key=lambda x: x.split("-")[0] + x.split("-")[-1], reverse=True
