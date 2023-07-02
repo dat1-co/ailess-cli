@@ -1,9 +1,9 @@
 import json
 import os
+import re
 from string import Template
 
 import boto3
-import re
 from yaspin import yaspin
 
 from .aws_utils import get_instance_type_info, get_aws_account_id

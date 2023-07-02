@@ -1,15 +1,15 @@
+import json
 import os
+import re
 import subprocess
 import sys
 import threading
+import urllib.request
 
 import docker
-import signal
-import urllib.request, json
-import re
+from yaspin import yaspin
 
 from ailess.modules.cli_utils import run_command_in_working_directory
-from yaspin import yaspin
 
 DOCKER_ARCHITECTURE_AMD64 = "linux/amd64"
 DOCKER_ARCHITECTURE_ARM64 = "linux/arm64"
