@@ -1,31 +1,31 @@
 import os
 from pipreqs.pipreqs import get_all_imports, get_pkg_names, get_import_local, get_imports_info
 
+
 def ensure_requirements_exists():
     if not os.path.exists("requirements.txt"):
         print("requirements.txt not found. Generating...")
         generate_requirements_file("./")
-        
+
+
 def get_libs(project_path):
-    candidates = get_all_imports(project_path,
-                                 encoding=None,
-                                 extra_ignore_dirs=None,
-                                 follow_links=None)
+    candidates = get_all_imports(project_path, encoding=None, extra_ignore_dirs=None, follow_links=None)
     candidates = get_pkg_names(candidates)
     pypi_server = "https://pypi.python.org/pypi/"
     local = get_import_local(candidates, encoding=None)
 
-    difference = [x for x in candidates if
-                    x.lower() not in [y for x in local for y in x['exports']]
-                    and
-                    x.lower() not in [x['name'] for x in local]]
+    difference = [
+        x
+        for x in candidates
+        if x.lower() not in [y for x in local for y in x["exports"]]
+        and x.lower() not in [x["name"] for x in local]
+    ]
 
-    imports = local + get_imports_info(difference,
-                                           proxy=None,
-                                           pypi_server=pypi_server)
-    imports = sorted(imports, key=lambda x: x['name'].lower())
+    imports = local + get_imports_info(difference, proxy=None, pypi_server=pypi_server)
+    imports = sorted(imports, key=lambda x: x["name"].lower())
     return imports
-    
+
+
 def generate_requirements_file(project_path):
     libs = get_libs(project_path)
     file_path = os.path.join(project_path, "requirements.txt")

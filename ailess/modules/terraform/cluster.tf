@@ -30,6 +30,10 @@ variable "task_num_gpus" {
   type    = number
 }
 
+variable "cpu_architecture" {
+  type    = string
+}
+
 provider "aws" {
   region  = var.region
 }
@@ -75,6 +79,12 @@ data "aws_ami" "ecs" {
     name   = "root-device-type"
     values = ["ebs"]
   }
+
+  filter {
+    name   = "architecture"
+    values = [var.cpu_architecture]
+  }
+
   owners = ["amazon"]
 }
 
@@ -97,7 +107,7 @@ resource "aws_ecs_task_definition" "cluster_task" {
       "portMappings": [
         {
           "containerPort": ${var.task_port},
-          "hostPort": ${var.task_port}
+          "hostPort": 0
         }
       ],
       "memory": ${var.task_memory_size},
@@ -113,7 +123,7 @@ resource "aws_ecs_task_definition" "cluster_task" {
     }
   ]
   DEFINITION
-  network_mode = "host"
+  network_mode = "bridge"
   cpu                      = var.task_cpu_reservation
   memory                   = var.task_memory_size
   execution_role_arn       = aws_iam_role.diffusionEcsTaskExecutionRole.arn
