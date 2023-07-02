@@ -1,2 +1,0 @@
-[console_scripts]
-ailess = ailess.cli:app
