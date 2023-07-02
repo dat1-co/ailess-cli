@@ -37,7 +37,8 @@ def get_image_name_from_config(config):
 
 
 def generate_dockerfile(config):
-    # TODO: generate dockerfile based on config and cuda version
+    if os.path.exists(os.path.join(os.getcwd(), "Dockerfile")):
+        return
     dockerfile_content = []
     dockerfile_content.append("FROM {}".format(get_image_name_from_config(config)))
     if config["cuda_version"] is not None:
@@ -82,6 +83,11 @@ def generate_or_update_docker_ignore():
 def build_docker_image(config):
     from ailess.modules.terraform_utils import convert_to_alphanumeric
 
+    dockerfile_path = os.path.join(".ailess", "Dockerfile")
+
+    if os.path.exists(os.path.join(os.getcwd(), "Dockerfile")):
+        dockerfile_path = os.path.join(os.getcwd(), "Dockerfile")
+
     with yaspin(text="    building docker image") as spinner:
         run_command_in_working_directory(
             "docker buildx build \
@@ -90,7 +96,7 @@ def build_docker_image(config):
             -f {} . --load".format(
                 config["cpu_architecture"],
                 convert_to_alphanumeric(config["project_name"]),
-                os.path.join(".ailess", "Dockerfile"),
+                dockerfile_path,
             ),
             spinner,
         )
