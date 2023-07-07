@@ -62,11 +62,13 @@ RUN apt update && \
     with open("Dockerfile", "w") as dockerfile:
         dockerfile.write("\n".join(dockerfile_content))
 
+
 def generate_docker_compose_file(config):
     if os.path.exists(os.path.join(os.getcwd(), "docker-compose.yml")):
         return
 
     from ailess.modules.terraform_utils import convert_to_alphanumeric
+
     docker_compose_content = """services:
   {}:
     environment:
@@ -84,7 +86,7 @@ def generate_docker_compose_file(config):
         config["host_port"],
     )
 
-    if config['has_gpu']:
+    if config["has_gpu"]:
         docker_compose_content += """    
     deploy:
       resources:
@@ -95,6 +97,7 @@ def generate_docker_compose_file(config):
 """
     with open("docker-compose.yml", "w") as dockerfile:
         dockerfile.write(docker_compose_content)
+
 
 def generate_or_update_docker_ignore():
     if os.path.exists(".dockerignore"):
@@ -134,7 +137,7 @@ def build_docker_image(config):
 def start_docker_container(config):
     stop_container()
     print("✔     starting container at http://localhost:{}".format(config["host_port"]))
-    run_command_in_working_directory("docker-compose up", None, os.getcwd() ,True)
+    run_command_in_working_directory("docker-compose up", None, os.getcwd(), True)
 
 
 def stop_container():
