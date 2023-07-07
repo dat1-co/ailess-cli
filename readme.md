@@ -38,10 +38,13 @@ You will be prompted to select the AWS Region you want to deploy your model to, 
 In turn, Ailess will generate the following files in .ailess directory:
 
 - **.ailess/config.json**: Configuration file for ailess.
-- **.ailess/Dockerfile**: Dockerfile for building the Docker image.
+- **Dockerfile**: Dockerfile for building the Docker image.
+- **docker-compose.yml**: Docker Compose file for running the Docker image locally.
 - **.ailess/cluster.tf**: Terraform configuration file for creating the ECS cluster.
 - **.ailess/cluster.tfvars**: Terraform variables file for creating the ECS cluster.
 - **requirements.txt**: Python dependencies for your model.
+
+All of these files can be modified to suit your needs and Ailess will continue to work and appropriately update the infrastructure/docker image.
 
 ### Running locally
 
