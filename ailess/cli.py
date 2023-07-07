@@ -10,7 +10,7 @@ from ailess.modules.config_utils import save_config, load_config
 from ailess.modules.docker_utils import (
     generate_or_update_docker_ignore,
     generate_dockerfile,
-    build_docker_image,
+    build_docker_image, generate_docker_compose_file,
 )
 from ailess.modules.docker_utils import start_docker_container, stop_container
 from ailess.modules.python_utils import ensure_requirements_exists
@@ -43,6 +43,8 @@ def init() -> None:
     print("✔    .dockerignore")
     generate_dockerfile(config)
     print("✔    Dockerfile")
+    generate_docker_compose_file(config)
+    print("✔    docker-compose.yml")
     generate_tfvars_file(config)
     generate_terraform_file(config)
     print("✔    Terraform Cluster Config")
@@ -78,7 +80,7 @@ def serve() -> None:
     try:
         start_docker_container(config)
     except KeyboardInterrupt:
-        stop_container(config)
+        stop_container()
         sys.exit(0)
     print("🚀    done")
 

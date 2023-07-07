@@ -3,10 +3,8 @@ import os
 import re
 import subprocess
 import sys
-import threading
 import urllib.request
 
-import docker
 from yaspin import yaspin
 
 from ailess.modules.cli_utils import run_command_in_working_directory
@@ -61,9 +59,42 @@ RUN apt update && \
     dockerfile_content.append("RUN pip3 install -r requirements.txt")
     dockerfile_content.append("ADD . /app")
     dockerfile_content.append('CMD ["python3", "-u", "{}"]'.format(config["entrypoint_path"]))
-    with open(".ailess/Dockerfile", "w") as dockerfile:
+    with open("Dockerfile", "w") as dockerfile:
         dockerfile.write("\n".join(dockerfile_content))
 
+def generate_docker_compose_file(config):
+    if os.path.exists(os.path.join(os.getcwd(), "docker-compose.yml")):
+        return
+
+    from ailess.modules.terraform_utils import convert_to_alphanumeric
+    docker_compose_content = """services:
+  {}:
+    environment:
+      - PYTHONUNBUFFERED=1
+    image: {}:latest
+    build: .
+    platform: {}
+    ports:
+      - "{}:{}"  
+    """.format(
+        convert_to_alphanumeric(config["project_name"]),
+        convert_to_alphanumeric(config["project_name"]),
+        config["cpu_architecture"],
+        config["host_port"],
+        config["host_port"],
+    )
+
+    if config['has_gpu']:
+        docker_compose_content += """    
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]  
+"""
+    with open("docker-compose.yml", "w") as dockerfile:
+        dockerfile.write(docker_compose_content)
 
 def generate_or_update_docker_ignore():
     if os.path.exists(".dockerignore"):
@@ -83,10 +114,7 @@ def generate_or_update_docker_ignore():
 def build_docker_image(config):
     from ailess.modules.terraform_utils import convert_to_alphanumeric
 
-    dockerfile_path = os.path.join(".ailess", "Dockerfile")
-
-    if os.path.exists(os.path.join(os.getcwd(), "Dockerfile")):
-        dockerfile_path = os.path.join(os.getcwd(), "Dockerfile")
+    dockerfile_path = os.path.join(os.getcwd(), "Dockerfile")
 
     with yaspin(text="    building docker image") as spinner:
         run_command_in_working_directory(
@@ -104,44 +132,13 @@ def build_docker_image(config):
 
 
 def start_docker_container(config):
-    from ailess.modules.terraform_utils import convert_to_alphanumeric
-
-    client = docker.from_env()
-    try:
-        stop_container(config)
-    except docker.errors.NotFound:
-        pass
-    environment = {"NVIDIA_VISIBLE_DEVICES": "all"} if config["has_gpu"] else None
-    container = client.containers.run(
-        convert_to_alphanumeric(config["project_name"]),  # Replace with the name or ID of your Docker image
-        name=convert_to_alphanumeric(config["project_name"]),
-        ports={"{}/tcp".format(config["host_port"]): config["host_port"]},
-        environment=environment,
-        detach=True,
-    )
-
-    print("✔     container started at http://localhost:{}".format(config["host_port"]))
-
-    def print_logs():
-        for log in container.logs(stream=True):
-            print(log.decode().strip())
-
-    log_thread = threading.Thread(target=print_logs)
-    log_thread.start()
-
-    container.wait()
-    container.stop()
-    log_thread.join()
-    container.remove()
+    stop_container()
+    print("✔     starting container at http://localhost:{}".format(config["host_port"]))
+    run_command_in_working_directory("docker-compose up", None, os.getcwd() ,True)
 
 
-def stop_container(config):
-    from ailess.modules.terraform_utils import convert_to_alphanumeric
-
-    client = docker.from_env()
-    container = client.containers.get(convert_to_alphanumeric(config["project_name"]))
-    container.stop()
-    container.remove()
+def stop_container():
+    run_command_in_working_directory("docker-compose down", None)
 
 
 def login_to_docker_registry(username, password, registry_url, spinner):

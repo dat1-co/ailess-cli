@@ -79,24 +79,30 @@ def define_cuda_version():
     return cuda_version
 
 
-def run_command_in_working_directory(command, spinner, cwd=os.getcwd()):
+def run_command_in_working_directory(command, spinner, cwd=os.getcwd(), join_stdout_stderr=False):
     try:
-        # Run the command silently, redirecting output
-        completed_process = subprocess.run(
-            command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd
-        )
+        if join_stdout_stderr:
+            completed_process = subprocess.run(
+                command, shell=True, stdout=sys.stdout, stderr=subprocess.STDOUT, cwd=cwd
+            )
+        else:
+            completed_process = subprocess.run(
+                command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd
+            )
 
         # Check if the command was successful
         if completed_process.returncode == 0:
             return completed_process.stdout  # Command executed successfully, no need to display output
 
-        spinner.fail("❌")
+        if spinner is not None:
+            spinner.fail("❌")
         # Command failed, print stdout and stderr
         sys.stdout.buffer.write(completed_process.stdout)  # Print stdout
         sys.stderr.buffer.write(completed_process.stderr)  # Print stderr
         exit(1)
 
     except Exception as e:
-        spinner.fail("❌")
+        if spinner is not None:
+            spinner.fail("❌")
         print(f"Error executing command: {str(e)}")
         exit(1)
