@@ -101,7 +101,7 @@ The easiest way to do this is to use the [IAM Policy Generator](https://awspolic
 To allow your app to access AWS resources while running locally with `ailess serve`, you will need to modify the docker-compose.yml file.
 
 If your credentials are stored in ~/.aws/credentials, you can mount the credentials file to the container:
-```yaml
+```diff
 services:
   ailess-test-project:
     environment:
@@ -116,7 +116,7 @@ services:
 ```
 
 If your credentials are stored in environment variables, you can pass them to the container:
-```yaml
+```diff
 services:
   ailess-test-project:
     environment:
