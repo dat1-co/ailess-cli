@@ -16,6 +16,10 @@ def generate_terraform_file(config):
     script_dir = os.path.dirname(script_path)
     tf_template_path = os.path.join(script_dir, "terraform/cluster.tf")
 
+    with open(os.path.join(script_dir, "terraform/iam_policy.json"), "r") as file:
+        iam_role_statements_content = file.read()
+    with open(".ailess/iam_policy.json", "w") as iam_role_statements_file:
+        iam_role_statements_file.write(iam_role_statements_content)
     with open(tf_template_path, "r") as file:
         file_contents = file.read()
     with open(".ailess/cluster.tf", "w") as tf_file:
