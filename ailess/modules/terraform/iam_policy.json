@@ -1,11 +1,5 @@
 {
   "Version": "2012-10-17",
   "Statement": [
-    {
-      "Sid": "Stmt1688860056105",
-      "Action": "*",
-      "Effect": "Deny",
-      "Resource": "*"
-    }
   ]
 }
