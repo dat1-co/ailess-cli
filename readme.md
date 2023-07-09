@@ -111,8 +111,8 @@ services:
     platform: linux/amd64
     ports:
       - "5000:5000"  
-+    volumes:
-+      - $HOME/.aws/credentials:/root/.aws/credentials:ro
++   volumes:
++     - $HOME/.aws/credentials:/root/.aws/credentials:ro
 ```
 
 If your credentials are stored in environment variables, you can pass them to the container:
@@ -121,9 +121,9 @@ services:
   ailess-test-project:
     environment:
       - PYTHONUNBUFFERED=1
-+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-+      - AWS_REGION=${AWS_REGION}
++     - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
++     - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
++     - AWS_REGION=${AWS_REGION}
     image: ailess-test-project:latest
     build: .
     platform: linux/amd64
