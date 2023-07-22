@@ -98,7 +98,7 @@ def run_command_in_working_directory(command, spinner, cwd=os.getcwd(), join_std
             spinner.fail("❌")
         # Command failed, print stdout and stderr
         sys.stdout.buffer.write(completed_process.stdout)  # Print stdout
-        sys.stderr.buffer.write(completed_process.stderr)  # Print stderr
+        sys.stdout.buffer.write(completed_process.stderr)  # Print stderr
         exit(1)
 
     except Exception as e:

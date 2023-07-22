@@ -40,6 +40,7 @@ In turn, Ailess will generate the following files in .ailess directory:
 - **.ailess/config.json**: Configuration file for ailess.
 - **Dockerfile**: Dockerfile for building the Docker image.
 - **docker-compose.yml**: Docker Compose file for running the Docker image locally.
+- **.ailess/iam_policy.json**: IAM policy for the ECS task.
 - **.ailess/cluster.tf**: Terraform configuration file for creating the ECS cluster.
 - **.ailess/cluster.tfvars**: Terraform variables file for creating the ECS cluster.
 - **requirements.txt**: Python dependencies for your model.
@@ -88,6 +89,47 @@ Ailess packages your model and its dependencies into a Docker image. It will try
 Ailess creates an ECS cluster that sits behind an Application Load Balancer (ALB).
 This allows zero-downtime deployment and auto-scaling of the cluster.
 The ECS also runs health checks on the endpoint and restarts the container if it fails or rolls the deployment back if it fails to start.
+
+## Configuration
+
+### Accessing AWS resources
+
+By default, your app will have no access to AWS resources. 
+To allow your app to access AWS resources, edit the .ailess/iam_policy.json file and add the necessary permissions.
+The easiest way to do this is to use the [IAM Policy Generator](https://awspolicygen.s3.amazonaws.com/policygen.html) with IAM Policy type.
+
+To allow your app to access AWS resources while running locally with `ailess serve`, you will need to modify the docker-compose.yml file.
+
+If your credentials are stored in ~/.aws/credentials, you can mount the credentials file to the container:
+```diff
+services:
+  ailess-test-project:
+    environment:
+      - PYTHONUNBUFFERED=1
+    image: ailess-test-project:latest
+    build: .
+    platform: linux/amd64
+    ports:
+      - "5000:5000"  
++   volumes:
++     - $HOME/.aws/credentials:/root/.aws/credentials:ro
+```
+
+If your credentials are stored in environment variables, you can pass them to the container:
+```diff
+services:
+  ailess-test-project:
+    environment:
+      - PYTHONUNBUFFERED=1
++     - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
++     - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
++     - AWS_REGION=${AWS_REGION}
+    image: ailess-test-project:latest
+    build: .
+    platform: linux/amd64
+    ports:
+      - "5000:5000"  
+```
 
 ## Contributing
 

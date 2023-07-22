@@ -1,2 +1,3 @@
 include ailess/modules/terraform/cluster.tf
+include ailess/modules/terraform/iam_policy.json
 include ailess/*

@@ -126,12 +126,11 @@ resource "aws_ecs_task_definition" "cluster_task" {
   network_mode = "bridge"
   cpu                      = var.task_cpu_reservation
   memory                   = var.task_memory_size
-  execution_role_arn       = aws_iam_role.diffusionEcsTaskExecutionRole.arn
+  execution_role_arn       = aws_iam_role.ecsTaskExecutionRole.arn
 }
 
-resource "aws_iam_role" "diffusionEcsTaskExecutionRole" {
-  name_prefix = "${var.project_name}"
-  assume_role_policy = "${data.aws_iam_policy_document.assume_role_policy.json}"
+data "local_file" "iam_policy_file" {
+  filename = "iam_policy.json"
 }
 
 data "aws_iam_policy_document" "assume_role_policy" {
@@ -145,8 +144,13 @@ data "aws_iam_policy_document" "assume_role_policy" {
   }
 }
 
+resource "aws_iam_role" "ecsTaskExecutionRole" {
+  name_prefix = "${var.project_name}"
+  assume_role_policy = "${data.aws_iam_policy_document.assume_role_policy.json}"
+}
+
 resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
-  role       = "${aws_iam_role.diffusionEcsTaskExecutionRole.name}"
+  role       = "${aws_iam_role.ecsTaskExecutionRole.name}"
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
@@ -266,6 +270,14 @@ data "aws_iam_policy_document" "ecs_agent" {
 resource "aws_iam_role" "ecs_agent" {
   name_prefix = "${var.project_name}"
   assume_role_policy = data.aws_iam_policy_document.ecs_agent.json
+
+  dynamic "inline_policy" {
+    for_each = jsondecode(data.local_file.iam_policy_file.content).Statement != [] ? ["ecsTaskExecutionRole_policy"] : []
+    content {
+      name   = inline_policy.key
+      policy = data.local_file.iam_policy_file.content
+    }
+  }
 }
 
 
