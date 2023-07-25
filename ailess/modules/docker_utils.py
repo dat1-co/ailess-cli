@@ -137,11 +137,11 @@ def build_docker_image(config):
 def start_docker_container(config):
     stop_container()
     print("✔     starting container at http://localhost:{}".format(config["host_port"]))
-    run_command_in_working_directory("docker-compose up", None, os.getcwd(), True)
+    run_command_in_working_directory("docker compose up", None, os.getcwd(), True)
 
 
 def stop_container():
-    run_command_in_working_directory("docker-compose down", None)
+    run_command_in_working_directory("docker compose down", None)
 
 
 def login_to_docker_registry(username, password, registry_url, spinner):
