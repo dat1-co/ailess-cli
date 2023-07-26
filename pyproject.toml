@@ -1,6 +1,6 @@
 [project]
 name = "ailess"
-version = "0.1.0"
+version = "0.1.1"
 
 dependencies = [
     "typer >= 0.9.0",
@@ -9,6 +9,10 @@ dependencies = [
     "yaspin >= 2.3.0",
     "pipreqs >= 0.4.13",
 ]
+
+[project.readme]
+file = "README.md"
+content-type = "text/markdown"
 
 [project.scripts]
 ailess = "ailess.cli:app"
