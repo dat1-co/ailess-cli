@@ -5,7 +5,7 @@ from pipreqs.pipreqs import get_all_imports, get_pkg_names, get_import_local, ge
 
 def ensure_requirements_exists():
     if not os.path.exists("requirements.txt"):
-        print("requirements.txt not found. Generating...")
+        print("WARNING: requirements.txt not found. We will try to generate one for you. This is an experimental feature and will not work in all cases. Please double-check the generated file.")
         generate_requirements_file("./")
 
 

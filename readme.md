@@ -131,6 +131,10 @@ services:
       - "5000:5000"  
 ```
 
+## Examples
+
+[Examples repository](https://github.com/dat1-co/ailess-examples) contains several projects deployable with Ailess showcasing different use cases.
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
