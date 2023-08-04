@@ -20,7 +20,7 @@ def config_prompt():
         ),
         inquirer.Text("host_port", message="What port is your app running on?", default=5000),
         inquirer.Text(
-            "instances_count", message="How many servers in the cluster do you want to run?", default=2
+            "instances_count", message="How many servers in the cluster do you want to run?", default=1
         ),
         inquirer.List(
             "ec2_instance_type",
@@ -53,6 +53,7 @@ def config_prompt():
     instance_data = get_instance_type_info(answers["ec2_instance_type"], answers["aws_region"])
     answers["cpu_architecture"] = instance_data["cpu_architecture"]
     answers["has_gpu"] = instance_data["num_gpus"] > 0
+    answers["gpu_manufacturer"] = instance_data["gpu_manufacturer"]
 
     return answers
 

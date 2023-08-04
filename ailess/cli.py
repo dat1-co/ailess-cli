@@ -34,12 +34,7 @@ def init() -> None:
     print("✔    Config saved to .ailess/config.json")
     ensure_requirements_exists()
     print("✔    requirements.txt")
-    if config["has_gpu"]:
-        config.update({"cuda_version": define_cuda_version()})
-        save_config(config)
-    else:
-        config.update({"cuda_version": None})
-        save_config(config)
+    save_config(config)
     generate_or_update_docker_ignore()
     print("✔    .dockerignore")
     generate_dockerfile(config)
