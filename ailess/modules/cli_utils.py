@@ -58,28 +58,6 @@ def config_prompt():
     return answers
 
 
-def cuda_version_prompt():
-    questions = [
-        inquirer.Text(
-            "cuda_version",
-            message="You selected a GPU instance. Please enter an NVIDIA CUDA version to use",
-            default="12.1",
-        ),
-    ]
-    answers = inquirer.prompt(questions)
-    return answers["cuda_version"]
-
-
-def define_cuda_version():
-    from ailess.modules.env_utils import get_cuda_version
-
-    cuda_version = get_cuda_version()
-    if cuda_version is None:
-        cuda_version = cuda_version_prompt()
-
-    return cuda_version
-
-
 def run_command_in_working_directory(command, spinner, cwd=os.getcwd(), join_stdout_stderr=False):
     try:
         if join_stdout_stderr:
