@@ -5,7 +5,7 @@ import typer
 
 from ailess import __app_name__, __version__
 from ailess.modules.aws_utils import push_docker_image, print_endpoint_info, ecs_deploy, wait_for_deployment
-from ailess.modules.cli_utils import config_prompt, define_cuda_version
+from ailess.modules.cli_utils import config_prompt
 from ailess.modules.config_utils import save_config, load_config
 from ailess.modules.docker_utils import (
     generate_or_update_docker_ignore,
