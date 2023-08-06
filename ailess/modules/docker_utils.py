@@ -8,28 +8,40 @@ import urllib.request
 from yaspin import yaspin
 
 from ailess.modules.cli_utils import run_command_in_working_directory
-from ailess.modules.python_utils import RequirementsParser
-from ailess.modules.docker_searchers import get_sercher_from_config
 
 DOCKER_ARCHITECTURE_AMD64 = "linux/amd64"
 DOCKER_ARCHITECTURE_ARM64 = "linux/arm64"
 
 
+def get_image_name_from_config(config):
+    cuda_version = config["cuda_version"]
+    if cuda_version is None:
+        return "python:3.9"
+    else:
+        response = urllib.request.urlopen(
+            f"https://hub.docker.com/v2/repositories/nvidia/cuda/tags/?name={cuda_version}&page_size=100"
+        )
+        image_names = list(map(lambda result: result["name"], json.load(response)["results"]))
+        pattern = r"^(\d+\.\d+)(\.\d+)?-runtime-ubuntu(\d+\.\d+)$"
+        filtered_images = [image for image in image_names if re.match(pattern, image)]
+        sorted_images = sorted(
+            filtered_images, key=lambda x: x.split("-")[0] + x.split("-")[-1], reverse=True
+        )
+        if len(sorted_images) == 0:
+            print(f"Could not find a suitable docker image for cuda version {cuda_version}")
+            exit(1)
+        latest_image = sorted_images[0]
+        return f"nvidia/cuda:{latest_image}"
+
+
 def generate_dockerfile(config):
     if os.path.exists(os.path.join(os.getcwd(), "Dockerfile")):
         return
-
-    # Get image name from config
-    requirements = RequirementsParser("requirements.txt")
-    searcher = get_sercher_from_config(config, requirements)
-    image_name = searcher.get_image_name(config, requirements)
-    image_extras = searcher.get_image_extras()
-    
     dockerfile_content = []
-    dockerfile_content.append("FROM {}".format(image_name))
-    if config["has_gpu"]:
+    dockerfile_content.append("FROM {}".format(get_image_name_from_config(config)))
+    if config["cuda_version"] is not None:
         dockerfile_content.append(
-"""
+            """
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt update && \
@@ -42,8 +54,6 @@ RUN apt update && \
 """
         )
 
-    dockerfile_content.append(image_extras)
-    dockerfile_content.append("RUN apt-get update && apt-get install libgl1 -y")
     dockerfile_content.append("ADD requirements.txt /app/requirements.txt")
     dockerfile_content.append("WORKDIR /app")
     dockerfile_content.append("RUN pip3 install -r requirements.txt")
@@ -67,7 +77,7 @@ def generate_docker_compose_file(config):
     build: .
     platform: {}
     ports:
-      - "{}:{}"
+      - "{}:{}"  
     """.format(
         convert_to_alphanumeric(config["project_name"]),
         convert_to_alphanumeric(config["project_name"]),
@@ -77,13 +87,13 @@ def generate_docker_compose_file(config):
     )
 
     if config["has_gpu"]:
-        docker_compose_content += """
+        docker_compose_content += """    
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              capabilities: [gpu]
+              capabilities: [gpu]  
 """
     with open("docker-compose.yml", "w") as dockerfile:
         dockerfile.write(docker_compose_content)

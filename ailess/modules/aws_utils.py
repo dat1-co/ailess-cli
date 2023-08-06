@@ -58,6 +58,7 @@ def get_instance_type_info(instance_type: str, region: str):
         DryRun=False,
         InstanceTypes=[instance_type],
     )
+
     if len(response["InstanceTypes"]) == 0:
         print(f"ERROR: {instance_type} is not a valid instance type in {region}")
         exit(1)
@@ -66,15 +67,10 @@ def get_instance_type_info(instance_type: str, region: str):
 
     if "arm64" in response["InstanceTypes"][0]["ProcessorInfo"]["SupportedArchitectures"]:
         arch = DOCKER_ARCHITECTURE_ARM64
-    if len(response["InstanceTypes"][0].get("GpuInfo", {}).get("Gpus", []))>0:
-        gpu_manufacturer = response["InstanceTypes"][0].get("GpuInfo", {}).get("Gpus", [])[0].get("Manufacturer", {})
-    else:
-        gpu_manufacturer = None
 
     return {
         "memory_size": response["InstanceTypes"][0]["MemoryInfo"]["SizeInMiB"],
         "cpu_size": response["InstanceTypes"][0]["VCpuInfo"]["DefaultVCpus"] * 1024,
-        "gpu_manufacturer": gpu_manufacturer,
         "num_gpus": len(response["InstanceTypes"][0].get("GpuInfo", {}).get("Gpus", [])),
         "cpu_architecture": arch,
     }

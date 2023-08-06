@@ -309,13 +309,6 @@ resource "aws_launch_template" "ecs_launch_template" {
   iam_instance_profile {
     name = aws_iam_instance_profile.ecs_agent.name
   }
-  block_device_mappings {
-    device_name = tolist(data.aws_ami.ecs.block_device_mappings)[0].device_name
-
-    ebs {
-      volume_size = 100
-    }
-  }
 }
 
 resource "aws_ecs_capacity_provider" "capacity_provider" {
