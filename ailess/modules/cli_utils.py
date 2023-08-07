@@ -20,7 +20,7 @@ def config_prompt():
         ),
         inquirer.Text("host_port", message="What port is your app running on?", default=5000),
         inquirer.Text(
-            "instances_count", message="How many servers in the cluster do you want to run?", default=2
+            "instances_count", message="How many servers in the cluster do you want to run?", default=1
         ),
         inquirer.List(
             "ec2_instance_type",
@@ -53,30 +53,9 @@ def config_prompt():
     instance_data = get_instance_type_info(answers["ec2_instance_type"], answers["aws_region"])
     answers["cpu_architecture"] = instance_data["cpu_architecture"]
     answers["has_gpu"] = instance_data["num_gpus"] > 0
+    answers["gpu_manufacturer"] = instance_data["gpu_manufacturer"]
 
     return answers
-
-
-def cuda_version_prompt():
-    questions = [
-        inquirer.Text(
-            "cuda_version",
-            message="You selected a GPU instance. Please enter an NVIDIA CUDA version to use",
-            default="12.1",
-        ),
-    ]
-    answers = inquirer.prompt(questions)
-    return answers["cuda_version"]
-
-
-def define_cuda_version():
-    from ailess.modules.env_utils import get_cuda_version
-
-    cuda_version = get_cuda_version()
-    if cuda_version is None:
-        cuda_version = cuda_version_prompt()
-
-    return cuda_version
 
 
 def run_command_in_working_directory(command, spinner, cwd=os.getcwd(), join_stdout_stderr=False):
