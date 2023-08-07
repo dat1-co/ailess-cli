@@ -5,7 +5,7 @@ import typer
 
 from ailess import __app_name__, __version__
 from ailess.modules.aws_utils import push_docker_image, print_endpoint_info, ecs_deploy, wait_for_deployment
-from ailess.modules.cli_utils import config_prompt, define_cuda_version
+from ailess.modules.cli_utils import config_prompt
 from ailess.modules.config_utils import save_config, load_config
 from ailess.modules.docker_utils import (
     generate_or_update_docker_ignore,
@@ -34,12 +34,7 @@ def init() -> None:
     print("✔    Config saved to .ailess/config.json")
     ensure_requirements_exists()
     print("✔    requirements.txt")
-    if config["has_gpu"]:
-        config.update({"cuda_version": define_cuda_version()})
-        save_config(config)
-    else:
-        config.update({"cuda_version": None})
-        save_config(config)
+    save_config(config)
     generate_or_update_docker_ignore()
     print("✔    .dockerignore")
     generate_dockerfile(config)
